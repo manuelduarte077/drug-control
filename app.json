@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HelloWorld",
-    "slug": "expo-template-default",
+    "name": "Drug Control",
+    "slug": "drug-control",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,13 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.manuelduarte077.drugcontrol"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.manuelduarte077.drugcontrol"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +38,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b817b70a-1e42-42df-a9ac-47ee473f1abc"
+      }
+    },
+    "owner": "manuelduarte077",
+    "updates": {
+      "url": "https://u.expo.dev/b817b70a-1e42-42df-a9ac-47ee473f1abc"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
