@@ -15,21 +15,48 @@ export default function DrugItem({ drug }: DrugItemProps) {
       <ThemedView style={styles.item}>
         <Image
           source={{ uri: drug.image }}
-          style={{ width: 100, height: 100 }}
+          style={styles.image}
         />
-        <ThemedText>Nombre: {drug.name}</ThemedText>
-        <ThemedText>Descripción: {drug.description}</ThemedText>
-        <ThemedText>Hora: {drug.hour}</ThemedText>
-        <ThemedText>Fecha: {drug.date}</ThemedText>
-        <ThemedText>Repetición: {drug.repetition}</ThemedText>
+        <ThemedView style={styles.contentContainer}>
+          <ThemedText style={styles.title}>{drug.name}</ThemedText>
+          <ThemedText style={styles.text}>Hora: {drug.hour}</ThemedText>
+          <ThemedText style={styles.text}>Repetición: {drug.repetition}</ThemedText>
+        </ThemedView>
       </ThemedView>
     </Link>
   );
 }
 const styles = StyleSheet.create({
   item: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    flexDirection: "row",
+    padding: 8,
+    marginVertical: 6,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB"
   },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 10
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingVertical: 4
+  },
+  text: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 2,
+    fontWeight: "400"
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 6
+  }
 });

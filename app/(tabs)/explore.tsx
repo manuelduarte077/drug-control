@@ -3,7 +3,6 @@ import { StyleSheet } from "react-native";
 import DrugItem from "@/components/DrugItem";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 
 const data = [
@@ -52,15 +51,13 @@ export default function TabTwoScreen() {
         />
       }
     >
-      <ThemedView>
-        <ThemedText type="title" style={styles.title}>
-          Historial de medicamentos
-        </ThemedText>
+      <ThemedText type="title" style={styles.title}>
+        Historial de medicamentos
+      </ThemedText>
 
-        {data.map((drug) => (
-          <DrugItem key={drug.id} drug={drug} />
-        ))}
-      </ThemedView>
+      {data.map((drug) => (
+        <DrugItem key={drug.id} drug={drug} />
+      ))}
     </ParallaxScrollView>
   );
 }
