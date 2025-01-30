@@ -6,4 +6,6 @@ export interface Drug {
   date: string;
   repetition: string;
   image: string;
+  takenDates?: string[];
+  lastTaken?: string;
 }

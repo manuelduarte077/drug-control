@@ -10,11 +10,15 @@ interface DrugItemProps {
 }
 
 export default function DrugItem({ drug }: DrugItemProps) {
+  const imageSource = drug.image.startsWith('data:') 
+    ? { uri: drug.image }
+    : { uri: drug.image };
+
   return (
     <Link href={`/detail/${drug.id}`}>
       <ThemedView style={styles.item}>
         <Image
-          source={{ uri: drug.image }}
+          source={imageSource}
           style={styles.image}
         />
         <ThemedView style={styles.contentContainer}>

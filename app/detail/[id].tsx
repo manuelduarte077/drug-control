@@ -1,55 +1,134 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { Stack, useLocalSearchParams } from "expo-router";
-import React from "react";
-import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { useDrugs } from "@/hooks/useDrugs";
+import { format } from 'date-fns';
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Calendar } from 'react-native-calendars';
 
 export default function DetailMedicine() {
   const { id } = useLocalSearchParams();
+  const { drugs, deleteDrug, markAsTaken } = useDrugs();
+  const drug = drugs.find(d => d.id === id);
 
-  const data = {
-    id: id as string,
-    name: "Aspirin",
-    description:
-      "Aspirin es un medicamento que se utiliza para tratar la fiebre y la tos.",
-    hour: "12:00",
-    date: "2023-05-01",
-    repetition: "Diariamente",
-    image: "https://loremflickr.com/300/300",
+  if (!drug) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText>Medicamento no encontrado</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const canTakeToday = drug.repetition === 'daily' && 
+                       drug.lastTaken !== today;
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Confirmar eliminación",
+      "¿Estás seguro de que deseas eliminar este medicamento?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive",
+          onPress: async () => {
+            await deleteDrug(drug.id);
+            router.back();
+          }
+        }
+      ]
+    );
   };
 
+  const handleMarkAsTaken = async () => {
+    if (await markAsTaken(drug.id)) {
+      Alert.alert("¡Éxito!", "Medicamento marcado como tomado");
+    } else {
+      Alert.alert("Error", "No se pudo marcar el medicamento como tomado");
+    }
+  };
+  
+
+  const markedDates = drug.takenDates?.reduce((acc, date) => ({
+    ...acc,
+    [date]: { selected: true, marked: true, selectedColor: '#2196F3' }
+  }), {});
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <ThemedView style={styles.content}>
         <Stack.Screen
-          options={{ title: "Detail Medicine", headerBackTitle: "Back" }}
+          options={{ 
+            title: "Detalle del Medicamento",
+            headerBackTitle: "Atrás"
+          }}
         />
 
         <View style={styles.imageContainer}>
-          <Image source={{ uri: data.image }} style={styles.image} />
+          <Image source={{ uri: drug.image }} style={styles.image} />
         </View>
 
         <View style={styles.detailsContainer}>
-          <ThemedText style={styles.title}>{data.name}</ThemedText>
-          <ThemedText style={styles.description}>{data.description}</ThemedText>
+          <ThemedText style={styles.title}>{drug.name}</ThemedText>
+          <ThemedText style={styles.description}>{drug.description}</ThemedText>
 
           <View style={styles.infoContainer}>
             <View style={styles.infoItem}>
               <ThemedText style={styles.infoLabel}>Hora</ThemedText>
-              <ThemedText style={styles.infoValue}>{data.hour}</ThemedText>
+              <ThemedText style={styles.infoValue}>{drug.hour}</ThemedText>
             </View>
 
             <View style={styles.infoItem}>
-              <ThemedText style={styles.infoLabel}>Fecha</ThemedText>
-              <ThemedText style={styles.infoValue}>{data.date}</ThemedText>
+              <ThemedText style={styles.infoLabel}>Fecha inicio</ThemedText>
+              <ThemedText style={styles.infoValue}>{drug.date}</ThemedText>
             </View>
 
             <View style={styles.infoItem}>
               <ThemedText style={styles.infoLabel}>Repetición</ThemedText>
-              <ThemedText style={styles.infoValue}>
-                {data.repetition}
-              </ThemedText>
+              <ThemedText style={styles.infoValue}>{drug.repetition}</ThemedText>
             </View>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            {canTakeToday && (
+              <TouchableOpacity
+                style={[styles.button, styles.takenButton]}
+                onPress={handleMarkAsTaken}
+              >
+                <ThemedText style={styles.buttonText}>
+                  Marcar como tomada hoy
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.button, styles.deleteButton]}
+              onPress={handleDelete}
+            >
+              <ThemedText style={styles.buttonText}>
+                Eliminar medicamento
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.calendarContainer}>
+            <ThemedText style={styles.calendarTitle}>
+              Registro de tomas
+            </ThemedText>
+            <Calendar
+              markedDates={markedDates}
+              theme={{
+                todayTextColor: '#2196F3',
+                selectedDayBackgroundColor: '#2196F3',
+                selectedDayTextColor: '#ffffff',
+                arrowColor: '#2196F3',
+              }}
+            />
           </View>
         </View>
       </ThemedView>
@@ -62,58 +141,78 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flex: 1,
     padding: 16,
   },
   imageContainer: {
-    alignItems: "center",
-    marginVertical: 20,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   image: {
-    width: 250,
-    height: 250,
-    borderRadius: 20,
+    width: 200,
+    height: 200,
+    borderRadius: 10,
   },
   detailsContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    flex: 1,
   },
   title: {
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: 'bold',
     marginBottom: 10,
-    color: "#1E293B",
   },
   description: {
     fontSize: 16,
-    color: "#64748B",
     marginBottom: 20,
-    lineHeight: 24,
   },
   infoContainer: {
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingTop: 20,
+    marginBottom: 20,
   },
   infoItem: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   infoLabel: {
     fontSize: 14,
-    color: "#94A3B8",
-    marginBottom: 4,
+    color: '#666',
   },
   infoValue: {
     fontSize: 16,
-    color: "#334155",
-    fontWeight: "500",
+    fontWeight: '500',
+  },
+  buttonContainer: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  takenButton: {
+    backgroundColor: '#2196F3',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 20,
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
 });

@@ -4,8 +4,9 @@ import { useDrugs } from "@/hooks/useDrugs";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from "expo-image-picker";
-import { Stack, router } from "expo-router";
+import { router, Stack } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
@@ -23,35 +24,45 @@ export default function AddMedicine() {
   const [hour, setHour] = useState(new Date());
   const [date, setDate] = useState<Date | null>(null);
   const [repetition, setRepetition] = useState("none");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const { saveDrug } = useDrugs();
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      alert("Sorry, we need camera roll permissions to make this work!");
-      return;
-    }
+  const handleImagePick = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      if (!result.canceled) {
+        const manipulatorResult = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 300, height: 300 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
+        
+        setImage(manipulatorResult.base64 
+          ? `data:image/jpeg;base64,${manipulatorResult.base64}` 
+          : null
+        );
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      alert('Error al seleccionar la imagen');
     }
   };
 
   const handleSubmit = async () => {
     if (!drugName || !description) {
-      alert("Please fill in all required fields");
+      alert("Por favor complete todos los campos requeridos");
       return;
     }
+
 
     const newDrug = {
       id: Date.now().toString(),
@@ -65,7 +76,7 @@ export default function AddMedicine() {
 
     const success = await saveDrug(newDrug);
     if (success) {
-      router.back();
+      router.replace("/(tabs)"); 
     } else {
       alert("Error al guardar el medicamento");
     }
@@ -215,7 +226,7 @@ export default function AddMedicine() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+        <TouchableOpacity style={styles.imageButton} onPress={handleImagePick}>
           <MaterialIcons name="add-photo-alternate" size={24} color="#666" />
           <ThemedText style={styles.imageButtonText}>Add Photo</ThemedText>
         </TouchableOpacity>
