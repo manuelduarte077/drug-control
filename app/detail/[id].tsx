@@ -23,6 +23,21 @@ export default function DetailMedicine() {
   const nextDoseDate = drug.nextDose ? parseISO(drug.nextDose) : null;
   const canTakeNow = nextDoseDate && !isAfter(new Date(), nextDoseDate);
 
+  const formatTime = (timeString: string | undefined) => {
+    if (!timeString) return 'No disponible';
+    try {
+      if (timeString.includes('T')) {
+        return format(parseISO(timeString), 'HH:mm');
+      }
+      // Si solo es hora (HH:mm:ss)
+      const [hours, minutes] = timeString.split(':');
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Error en formato';
+    }
+  };
+
   const handleDelete = () => {
     Alert.alert(
       "Confirmar eliminación",
@@ -70,10 +85,10 @@ export default function DetailMedicine() {
           <View style={styles.infoBox}>
             <ThemedText style={styles.infoTitle}>Tratamiento diario</ThemedText>
             <ThemedText style={styles.infoValue}>
-              Duración: {drug.duration} días
+              Duración: {drug.duration || 1} días
             </ThemedText>
             <ThemedText style={styles.infoValue}>
-              Hora programada: {format(parseISO(drug.startTime), 'HH:mm')}
+              Hora programada: {formatTime(drug.startTime)}
             </ThemedText>
           </View>
         );
@@ -85,7 +100,7 @@ export default function DetailMedicine() {
               Cada {drug.interval} horas
             </ThemedText>
             <ThemedText style={styles.infoValue}>
-              Duración: {drug.duration} días
+              Duración: {drug.duration || 1} días
             </ThemedText>
             <ThemedText style={styles.infoValue}>
               Próxima dosis: {drug.nextDose ? format(parseISO(drug.nextDose), 'dd/MM/yyyy HH:mm') : 'No programada'}

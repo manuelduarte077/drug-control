@@ -111,9 +111,11 @@ export default function AddMedicine() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} 
+      keyboardShouldPersistTaps="handled"
+    >
       <ThemedView style={styles.content}>
-        <Stack.Screen options={{ title: "Nuevo Medicamento" }} />
+        <Stack.Screen options={{ title: "Nuevo Medicamento" , headerBackTitle: "Atrás" }} />
 
         <View style={styles.inputGroup}>
           <ThemedText style={styles.label}>Nombre del medicamento</ThemedText>
@@ -307,4 +309,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+
 });
