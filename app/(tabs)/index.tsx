@@ -11,11 +11,18 @@ import DrugItem from "@/components/DrugItem";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useDrugs } from "@/hooks/useDrugs";
+import { useFocusEffect } from '@react-navigation/native';
 import { Link } from "expo-router";
-import React from "react";
+import { useCallback } from 'react';
 
 export default function HomeScreen() {
-  const { drugs, loading } = useDrugs();
+  const { drugs, loading, refresh } = useDrugs();
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [])
+  );
 
   return (
     <SafeAreaView
@@ -52,7 +59,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#2196F3",

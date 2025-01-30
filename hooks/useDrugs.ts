@@ -9,18 +9,12 @@ export function useDrugs() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDrugs();
-  }, []);
-
   const loadDrugs = async () => {
     setLoading(true);
     try {
       const storedDrugs = await AsyncStorage.getItem(STORAGE_KEY);
       if (storedDrugs) {
         setDrugs(JSON.parse(storedDrugs));
-      } else {
-        setDrugs([]);
       }
     } catch (error) {
       console.error("Error loading drugs:", error);
@@ -29,9 +23,13 @@ export function useDrugs() {
     }
   };
 
-  const saveDrug = async (newDrug: Drug) => {
+  useEffect(() => {
+    loadDrugs();
+  }, []);
+
+  const saveDrug = async (drug: Drug) => {
     try {
-      const updatedDrugs = [...drugs, newDrug];
+      const updatedDrugs = [...drugs, drug];
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
       return true;
@@ -46,6 +44,7 @@ export function useDrugs() {
       const updatedDrugs = drugs.filter((drug) => drug.id !== id);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
+      await loadDrugs();
       return true;
     } catch (error) {
       console.error("Error deleting drug:", error);
@@ -55,10 +54,11 @@ export function useDrugs() {
 
   const markAsTaken = async (id: string) => {
     try {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const now = new Date();
+      const today = format(now, "yyyy-MM-dd");
+
       const updatedDrugs = drugs.map((drug) => {
         if (drug.id === id) {
-          const now = new Date();
           const nextDose =
             drug.type === "interval"
               ? format(
@@ -81,6 +81,7 @@ export function useDrugs() {
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
+      await loadDrugs();
       return true;
     } catch (error) {
       console.error("Error marking drug as taken:", error);

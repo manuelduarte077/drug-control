@@ -3,16 +3,26 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useDrugs } from "@/hooks/useDrugs";
+import { useFocusEffect } from '@react-navigation/native';
 import { parseISO } from "date-fns";
+import { useRouter } from "expo-router";
+import { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet } from "react-native";
 
 export default function ExploreScreen() {
-  const { drugs, loading } = useDrugs();
+  const { drugs, loading, refresh } = useDrugs();
+  const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [])
+  );
 
   const getTakenDrugs = () => {
     return drugs.filter(drug => {
       if (drug.type === 'once') {
-        return drug.lastTaken; // Si tiene lastTaken, fue tomada
+        return drug.lastTaken;
       }
       
       if (drug.type === 'daily' || drug.type === 'interval') {
@@ -20,7 +30,6 @@ export default function ExploreScreen() {
         const firstTakenDate = drug.takenDates?.[0];
         if (!firstTakenDate) return false;
         
-        // Calcular si ya se completó el tratamiento
         const startDate = parseISO(firstTakenDate);
         const expectedTakes = drug.type === 'daily' 
           ? duration 
