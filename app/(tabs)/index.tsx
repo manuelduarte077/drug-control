@@ -1,27 +1,28 @@
 import { AntDesign } from "@expo/vector-icons";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 
 import DrugItem from "@/components/DrugItem";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useDrugs } from "@/hooks/useDrugs";
-import { useFocusEffect } from '@react-navigation/native';
 import { Link } from "expo-router";
-import { useCallback } from 'react';
 
 export default function HomeScreen() {
-  const { drugs, loading, refresh } = useDrugs();
+  const { drugs, loading } = useDrugs();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [])
+  const filteredDrugs = drugs.filter((drug) =>
+    drug.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -36,19 +37,40 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedView>
 
-      <ThemedView style={styles.content}>
+      <ThemedView style={styles.searchContainer}>
+        <AntDesign name="search1" size={20} color="#666" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar medicamento..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor="#666"
+        />
+        <TouchableOpacity onPress={() => setSearchQuery("")}>
+          <AntDesign name="close" size={20} color="#666" />
+        </TouchableOpacity>
+      </ThemedView>
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {loading ? (
           <ActivityIndicator size="large" color="#2196F3" />
-        ) : drugs.length === 0 ? (
+        ) : filteredDrugs.length === 0 ? (
           <ThemedText style={styles.emptyText}>
-            No hay medicamentos agregados
+            {searchQuery 
+              ? "No se encontraron medicamentos"
+              : "No hay medicamentos agregados"}
           </ThemedText>
         ) : (
-          drugs.map((drug) => (
+          filteredDrugs.map((drug) => (
             <DrugItem key={drug.id} drug={drug} />
           ))
         )}
-      </ThemedView>
+        <View style={{ height: 50 }} />
+      </ScrollView>
 
       <Link href="/addMedicine" asChild>
         <TouchableOpacity style={styles.fab}>
@@ -59,7 +81,7 @@ export default function HomeScreen() {
   );
 }
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#2196F3",
@@ -75,12 +97,35 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
-  content: {
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    height: 44,
+  },
+  searchInput: {
     flex: 1,
-    gap: 16,
-    padding: 16,
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#333",
+  },
+  scrollView: {
+    flex: 1,
     backgroundColor: "#fff",
-    overflow: "hidden",
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
   },
   fab: {
     position: "absolute",
@@ -97,12 +142,5 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "center",
-    marginTop: 20,
   },
 });

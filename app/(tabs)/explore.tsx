@@ -3,41 +3,32 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useDrugs } from "@/hooks/useDrugs";
-import { useFocusEffect } from '@react-navigation/native';
 import { parseISO } from "date-fns";
-import { useRouter } from "expo-router";
-import { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet } from "react-native";
 
 export default function ExploreScreen() {
-  const { drugs, loading, refresh } = useDrugs();
-  const router = useRouter();
-
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [])
-  );
+  const { drugs, loading } = useDrugs();
 
   const getTakenDrugs = () => {
-    return drugs.filter(drug => {
-      if (drug.type === 'once') {
+    return drugs.filter((drug) => {
+      if (drug.type === "once") {
         return drug.lastTaken;
       }
-      
-      if (drug.type === 'daily' || drug.type === 'interval') {
+
+      if (drug.type === "daily" || drug.type === "interval") {
         const duration = drug.duration || 1;
         const firstTakenDate = drug.takenDates?.[0];
         if (!firstTakenDate) return false;
-        
+
         const startDate = parseISO(firstTakenDate);
-        const expectedTakes = drug.type === 'daily' 
-          ? duration 
-          : Math.floor((duration * 24) / (drug.interval || 24));
-        
+        const expectedTakes =
+          drug.type === "daily"
+            ? duration
+            : Math.floor((duration * 24) / (drug.interval || 24));
+
         return drug.takenDates?.length === expectedTakes;
       }
-      
+
       return false;
     });
   };
@@ -60,17 +51,17 @@ export default function ExploreScreen() {
         Historial de medicamentos
       </ThemedText>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#2196F3" />
-        ) : takenDrugs.length === 0 ? (
-          <ThemedText style={styles.emptyText}>
-            No hay medicamentos completados
-          </ThemedText>
-        ) : (
-          takenDrugs.map((drug) => (
-            <DrugItem key={drug.id} drug={drug} showCompleted />
-          ))
-        )}
+      {loading ? (
+        <ActivityIndicator size="large" color="#2196F3" />
+      ) : takenDrugs.length === 0 ? (
+        <ThemedText style={styles.emptyText}>
+          No hay medicamentos completados
+        </ThemedText>
+      ) : (
+        takenDrugs.map((drug) => (
+          <DrugItem key={drug.id} drug={drug} showCompleted />
+        ))
+      )}
     </ParallaxScrollView>
   );
 }
@@ -86,9 +77,9 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginTop: 20,
   },
 });

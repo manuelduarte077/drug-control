@@ -25,7 +25,7 @@ export default function AddMedicine() {
   const [interval, setInterval] = useState<number>(24);
   const [duration, setDuration] = useState<number>(1);
   const [image, setImage] = useState<string>("");
-  const { saveDrug } = useDrugs();
+  const { saveDrug, refresh } = useDrugs();
 
   const handleImagePick = async () => {
     try {
@@ -111,6 +111,7 @@ export default function AddMedicine() {
 
       const success = await saveDrug(newDrug);
       if (success) {
+        refresh();
         router.replace("/(tabs)");
       } else {
         Alert.alert('Error', 'No se pudo guardar el medicamento');

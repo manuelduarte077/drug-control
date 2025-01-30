@@ -8,7 +8,7 @@ import { Calendar } from 'react-native-calendars';
 
 export default function DetailMedicine() {
   const { id } = useLocalSearchParams();
-  const { drugs, deleteDrug, markAsTaken } = useDrugs();
+  const { drugs, deleteDrug, markAsTaken, refresh } = useDrugs();
   const drug = drugs.find(d => d.id === id);
 
   if (!drug) {
@@ -48,8 +48,11 @@ export default function DetailMedicine() {
           text: "Eliminar", 
           style: "destructive",
           onPress: async () => {
-            await deleteDrug(drug.id);
-            router.back();
+            const success = await deleteDrug(drug.id);
+            if (success) {
+              refresh();
+              router.back();
+            }
           }
         }
       ]
@@ -58,6 +61,7 @@ export default function DetailMedicine() {
 
   const handleMarkAsTaken = async () => {
     if (await markAsTaken(drug.id)) {
+      refresh();
       Alert.alert("¡Éxito!", "Medicamento marcado como tomado");
     } else {
       Alert.alert("Error", "No se pudo marcar el medicamento como tomado");

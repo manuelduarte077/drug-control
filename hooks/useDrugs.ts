@@ -1,13 +1,18 @@
 import { Drug } from "@/types/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addDays, addHours, format, isAfter, parseISO } from "date-fns";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "@drugs";
 
 export function useDrugs() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
 
   const loadDrugs = async () => {
     setLoading(true);
@@ -49,7 +54,7 @@ export function useDrugs() {
 
   useEffect(() => {
     loadDrugs();
-  }, []);
+  }, [refreshKey]);
 
   const saveDrug = async (drug: Drug) => {
     try {
@@ -178,6 +183,6 @@ export function useDrugs() {
     saveDrug,
     deleteDrug,
     markAsTaken,
-    refresh: loadDrugs,
+    refresh,
   };
 }
