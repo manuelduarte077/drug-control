@@ -9,9 +9,10 @@ import { ThemedView } from "./ThemedView";
 
 interface DrugItemProps {
   drug: Drug;
+  showCompleted?: boolean;
 }
 
-export default function DrugItem({ drug }: DrugItemProps) {
+export default function DrugItem({ drug, showCompleted }: DrugItemProps) {
   const imageSource = drug.image.startsWith('data:') 
     ? { uri: drug.image }
     : { uri: drug.image };
@@ -20,6 +21,21 @@ export default function DrugItem({ drug }: DrugItemProps) {
   const isOverdue = nextDoseDate && isAfter(new Date(), nextDoseDate);
 
   const renderStatus = () => {
+    if (showCompleted) {
+      return (
+        <View style={styles.statusContainer}>
+          <MaterialIcons 
+            name="check-circle" 
+            size={16} 
+            color="#4CAF50"
+          />
+          <ThemedText style={[styles.status, { color: "#4CAF50" }]}>
+            Completado
+          </ThemedText>
+        </View>
+      );
+    }
+
     if (drug.type === 'once') {
       return (
         <View style={styles.statusContainer}>

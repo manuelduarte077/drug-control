@@ -1,6 +1,6 @@
 import { Drug } from "@/types/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { format } from "date-fns";
+import { addHours, format } from "date-fns";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "@drugs";
@@ -58,10 +58,22 @@ export function useDrugs() {
       const today = format(new Date(), "yyyy-MM-dd");
       const updatedDrugs = drugs.map((drug) => {
         if (drug.id === id) {
+          const now = new Date();
+          const nextDose =
+            drug.type === "interval"
+              ? format(
+                  addHours(now, drug.interval || 24),
+                  "yyyy-MM-dd HH:mm:ss"
+                )
+              : drug.type === "daily"
+              ? format(addHours(now, 24), "yyyy-MM-dd HH:mm:ss")
+              : undefined;
+
           return {
             ...drug,
-            lastTaken: today,
+            lastTaken: format(now, "yyyy-MM-dd HH:mm:ss"),
             takenDates: [...(drug.takenDates || []), today],
+            nextDose,
           };
         }
         return drug;

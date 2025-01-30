@@ -1,48 +1,40 @@
-import { ActivityIndicator, StyleSheet } from "react-native";
-
 import DrugItem from "@/components/DrugItem";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useDrugs } from "@/hooks/useDrugs";
+import { parseISO } from "date-fns";
+import { ActivityIndicator, StyleSheet } from "react-native";
 
-
-const data = [
-  {
-    id: "1",
-    name: "Aspirin",
-    description:
-      "Aspirin es un medicamento que se utiliza para tratar la fiebre y la tos.",
-    hour: "12:00",
-    date: "2023-05-01",
-    repetition: "Diariamente",
-    image: "https://loremflickr.com/300/300",
-  },
-  {
-    id: "2",
-    name: "Paracetamol",
-    description:
-      "Paracetamol es un medicamento que se utiliza para tratar la tos y la fiebre.",
-    hour: "12:00",
-    date: "2023-05-01",
-    repetition: "Diariamente",
-    image: "https://loremflickr.com/300/300",
-  },
-  {
-    id: "3",
-    name: "Ibuprofeno",
-    description:
-      "Ibuprofeno es un medicamento que se utiliza para tratar la tos y la fiebre.",
-    hour: "12:00",
-    date: "2023-05-01",
-    repetition: "Diariamente",
-    image: "https://loremflickr.com/300/300",
-  },
-];
-
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
   const { drugs, loading } = useDrugs();
+
+  const getTakenDrugs = () => {
+    return drugs.filter(drug => {
+      if (drug.type === 'once') {
+        return drug.lastTaken; // Si tiene lastTaken, fue tomada
+      }
+      
+      if (drug.type === 'daily' || drug.type === 'interval') {
+        const duration = drug.duration || 1;
+        const firstTakenDate = drug.takenDates?.[0];
+        if (!firstTakenDate) return false;
+        
+        // Calcular si ya se completó el tratamiento
+        const startDate = parseISO(firstTakenDate);
+        const expectedTakes = drug.type === 'daily' 
+          ? duration 
+          : Math.floor((duration * 24) / (drug.interval || 24));
+        
+        return drug.takenDates?.length === expectedTakes;
+      }
+      
+      return false;
+    });
+  };
+
+  const takenDrugs = getTakenDrugs();
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
@@ -59,36 +51,35 @@ export default function TabTwoScreen() {
         Historial de medicamentos
       </ThemedText>
 
-      <ThemedView style={styles.content}>
         {loading ? (
           <ActivityIndicator size="large" color="#2196F3" />
-        ) : drugs.length === 0 ? (
+        ) : takenDrugs.length === 0 ? (
           <ThemedText style={styles.emptyText}>
-            No hay medicamentos agregados
+            No hay medicamentos completados
           </ThemedText>
         ) : (
-          drugs.map((drug) => <DrugItem key={drug.id} drug={drug} />)
+          takenDrugs.map((drug) => (
+            <DrugItem key={drug.id} drug={drug} showCompleted />
+          ))
         )}
-      </ThemedView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   headerImage: {
-    color: "#808080",
-    bottom: -90,
-    left: -35,
-    position: "absolute",
+    opacity: 0.5,
   },
   title: {
     fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
   },
-  content: {
-    padding: 16,
-  },
+
   emptyText: {
+    textAlign: 'center',
     fontSize: 16,
-    textAlign: "center",
+    color: '#666',
+    marginTop: 20,
   },
 });
