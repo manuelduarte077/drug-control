@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useDrugs } from "@/hooks/useDrugs";
-import { format } from 'date-fns';
+import { format, isAfter, parseISO } from 'date-fns';
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Calendar } from 'react-native-calendars';
@@ -20,8 +20,8 @@ export default function DetailMedicine() {
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
-  const canTakeToday = drug.repetition === 'daily' && 
-                       drug.lastTaken !== today;
+  const nextDoseDate = drug.nextDose ? parseISO(drug.nextDose) : null;
+  const canTakeNow = nextDoseDate && !isAfter(new Date(), nextDoseDate);
 
   const handleDelete = () => {
     Alert.alert(
@@ -48,22 +48,58 @@ export default function DetailMedicine() {
       Alert.alert("Error", "No se pudo marcar el medicamento como tomado");
     }
   };
-  
 
   const markedDates = drug.takenDates?.reduce((acc, date) => ({
     ...acc,
     [date]: { selected: true, marked: true, selectedColor: '#2196F3' }
   }), {});
 
+  const renderTreatmentInfo = () => {
+    switch (drug.type) {
+      case 'once':
+        return (
+          <View style={styles.infoBox}>
+            <ThemedText style={styles.infoTitle}>Dosis única</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Tomada: {drug.lastTaken ? format(parseISO(drug.lastTaken), 'dd/MM/yyyy HH:mm') : 'No tomada'}
+            </ThemedText>
+          </View>
+        );
+      case 'daily':
+        return (
+          <View style={styles.infoBox}>
+            <ThemedText style={styles.infoTitle}>Tratamiento diario</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Duración: {drug.duration} días
+            </ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Hora programada: {format(parseISO(drug.startTime), 'HH:mm')}
+            </ThemedText>
+          </View>
+        );
+      case 'interval':
+        return (
+          <View style={styles.infoBox}>
+            <ThemedText style={styles.infoTitle}>Tratamiento por intervalos</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Cada {drug.interval} horas
+            </ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Duración: {drug.duration} días
+            </ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Próxima dosis: {drug.nextDose ? format(parseISO(drug.nextDose), 'dd/MM/yyyy HH:mm') : 'No programada'}
+            </ThemedText>
+          </View>
+        );
+    }
+  };
+
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
         <Stack.Screen
-          options={{ 
+          options={{
             title: "Detalle del Medicamento",
             headerBackTitle: "Atrás"
           }}
@@ -77,31 +113,16 @@ export default function DetailMedicine() {
           <ThemedText style={styles.title}>{drug.name}</ThemedText>
           <ThemedText style={styles.description}>{drug.description}</ThemedText>
 
-          <View style={styles.infoContainer}>
-            <View style={styles.infoItem}>
-              <ThemedText style={styles.infoLabel}>Hora</ThemedText>
-              <ThemedText style={styles.infoValue}>{drug.hour}</ThemedText>
-            </View>
-
-            <View style={styles.infoItem}>
-              <ThemedText style={styles.infoLabel}>Fecha inicio</ThemedText>
-              <ThemedText style={styles.infoValue}>{drug.date}</ThemedText>
-            </View>
-
-            <View style={styles.infoItem}>
-              <ThemedText style={styles.infoLabel}>Repetición</ThemedText>
-              <ThemedText style={styles.infoValue}>{drug.repetition}</ThemedText>
-            </View>
-          </View>
+          {renderTreatmentInfo()}
 
           <View style={styles.buttonContainer}>
-            {canTakeToday && (
+            {canTakeNow && (
               <TouchableOpacity
                 style={[styles.button, styles.takenButton]}
                 onPress={handleMarkAsTaken}
               >
                 <ThemedText style={styles.buttonText}>
-                  Marcar como tomada hoy
+                  Marcar como tomada
                 </ThemedText>
               </TouchableOpacity>
             )}
@@ -116,20 +137,22 @@ export default function DetailMedicine() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.calendarContainer}>
-            <ThemedText style={styles.calendarTitle}>
-              Registro de tomas
-            </ThemedText>
-            <Calendar
-              markedDates={markedDates}
-              theme={{
-                todayTextColor: '#2196F3',
-                selectedDayBackgroundColor: '#2196F3',
-                selectedDayTextColor: '#ffffff',
-                arrowColor: '#2196F3',
-              }}
-            />
-          </View>
+          {drug.type !== 'once' && (
+            <View style={styles.calendarContainer}>
+              <ThemedText style={styles.calendarTitle}>
+                Registro de tomas
+              </ThemedText>
+              <Calendar
+                markedDates={markedDates}
+                theme={{
+                  todayTextColor: '#2196F3',
+                  selectedDayBackgroundColor: '#2196F3',
+                  selectedDayTextColor: '#ffffff',
+                  arrowColor: '#2196F3',
+                }}
+              />
+            </View>
+          )}
         </View>
       </ThemedView>
     </ScrollView>
@@ -164,20 +187,24 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 16,
     marginBottom: 20,
+    color: '#666',
   },
-  infoContainer: {
+  infoBox: {
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 10,
     marginBottom: 20,
   },
-  infoItem: {
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 10,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
+    color: '#2196F3',
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: '500',
+    marginBottom: 5,
+    color: '#333',
   },
   buttonContainer: {
     gap: 10,
@@ -203,16 +230,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
-    marginTop: 20,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   calendarTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 10,
     textAlign: 'center',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
   },
 });

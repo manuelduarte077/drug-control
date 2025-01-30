@@ -5,19 +5,6 @@ import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "@drugs";
 
-// Datos de ejemplo
-const sampleDrug: Drug = {
-  id: "1698523698745",
-  name: "Paracetamol",
-  description: "Para el dolor de cabeza",
-  hour: "08:00:00",
-  date: "2024-02-20",
-  repetition: "Diariamente",
-  image: "https://loremflickr.com/300/300",
-  takenDates: ["2024-02-20", "2024-02-21", "2024-02-22"],
-  lastTaken: "2024-02-22",
-};
-
 export function useDrugs() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,9 +20,7 @@ export function useDrugs() {
       if (storedDrugs) {
         setDrugs(JSON.parse(storedDrugs));
       } else {
-        // Si no hay datos guardados, usar el ejemplo
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([sampleDrug]));
-        setDrugs([sampleDrug]);
+        setDrugs([]);
       }
     } catch (error) {
       console.error("Error loading drugs:", error);

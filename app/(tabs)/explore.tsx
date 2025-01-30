@@ -1,9 +1,12 @@
-import { StyleSheet } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
 
 import DrugItem from "@/components/DrugItem";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useDrugs } from "@/hooks/useDrugs";
+
 
 const data = [
   {
@@ -39,6 +42,7 @@ const data = [
 ];
 
 export default function TabTwoScreen() {
+  const { drugs, loading } = useDrugs();
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
@@ -55,9 +59,17 @@ export default function TabTwoScreen() {
         Historial de medicamentos
       </ThemedText>
 
-      {data.map((drug) => (
-        <DrugItem key={drug.id} drug={drug} />
-      ))}
+      <ThemedView style={styles.content}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#2196F3" />
+        ) : drugs.length === 0 ? (
+          <ThemedText style={styles.emptyText}>
+            No hay medicamentos agregados
+          </ThemedText>
+        ) : (
+          drugs.map((drug) => <DrugItem key={drug.id} drug={drug} />)
+        )}
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
@@ -71,5 +83,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+  },
+  content: {
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: "center",
   },
 });

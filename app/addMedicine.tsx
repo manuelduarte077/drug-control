@@ -1,16 +1,16 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useDrugs } from "@/hooks/useDrugs";
+import { Drug } from "@/types/types";
 import { MaterialIcons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
+import { addHours, format } from 'date-fns';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from "expo-image-picker";
 import { router, Stack } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -19,15 +19,12 @@ import {
 } from "react-native";
 
 export default function AddMedicine() {
-  const [drugName, setDrugName] = useState("");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [hour, setHour] = useState(new Date());
-  const [date, setDate] = useState<Date | null>(null);
-  const [repetition, setRepetition] = useState("none");
+  const [type, setType] = useState<'once' | 'daily' | 'interval'>('once');
+  const [interval, setInterval] = useState<number>(24);
+  const [duration, setDuration] = useState<number>(1);
   const [image, setImage] = useState<string | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
   const { saveDrug } = useDrugs();
 
   const handleImagePick = async () => {
@@ -40,206 +37,190 @@ export default function AddMedicine() {
       });
 
       if (!result.canceled) {
-        const manipulatorResult = await ImageManipulator.manipulateAsync(
-          result.assets[0].uri,
-          [{ resize: { width: 300, height: 300 } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        );
-        
-        setImage(manipulatorResult.base64 
-          ? `data:image/jpeg;base64,${manipulatorResult.base64}` 
-          : null
-        );
+        try {
+          const manipResult = await ImageManipulator.manipulateAsync(
+            result.assets[0].uri,
+            [{ resize: { width: 300, height: 300 } }],
+            { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
+
+          if (manipResult.base64) {
+            const base64Image = `data:image/jpeg;base64,${manipResult.base64}`;
+            setImage(base64Image);
+            console.log('Imagen procesada correctamente');
+          } else {
+            console.error('No se generó base64');
+            Alert.alert('Error', 'No se pudo procesar la imagen');
+          }
+        } catch (manipError) {
+          console.error('Error manipulando imagen:', manipError);
+          Alert.alert('Error', 'No se pudo procesar la imagen');
+        }
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      alert('Error al seleccionar la imagen');
+      console.error('Error seleccionando imagen:', error);
+      Alert.alert('Error', 'No se pudo seleccionar la imagen');
     }
   };
 
   const handleSubmit = async () => {
-    if (!drugName || !description) {
-      alert("Por favor complete todos los campos requeridos");
+    if (!name || !description) {
+      Alert.alert('Error', 'Por favor complete todos los campos requeridos');
       return;
     }
 
+    if (!image) {
+      Alert.alert('Error', 'Por favor seleccione una imagen');
+      return;
+    }
 
-    const newDrug = {
-      id: Date.now().toString(),
-      name: drugName,
-      description,
-      hour: hour.toLocaleTimeString(),
-      date: (date || new Date()).toISOString().split("T")[0],
-      repetition,
-      image: image || "https://loremflickr.com/300/300",
-    };
+    const now = new Date();
+    const startTime = format(now, 'HH:mm:ss');
+    const nextDose = type === 'interval' 
+      ? format(addHours(now, interval), 'yyyy-MM-dd HH:mm:ss')
+      : type === 'daily' 
+        ? format(addHours(now, 24), 'yyyy-MM-dd HH:mm:ss')
+        : null;
 
-    const success = await saveDrug(newDrug);
-    if (success) {
-      router.replace("/(tabs)"); 
-    } else {
-      alert("Error al guardar el medicamento");
+    try {
+      const newDrug: Drug = {
+        id: Date.now().toString(),
+        name,
+        description,
+        startTime,
+        date: format(now, 'yyyy-MM-dd'),
+        type,
+        interval: type === 'interval' ? interval : undefined,
+        duration: type !== 'once' ? duration : 1,
+        image: image,
+        takenDates: [format(now, 'yyyy-MM-dd')],
+        lastTaken: format(now, 'yyyy-MM-dd'),
+        nextDose: nextDose || undefined
+      };
+
+      console.log('Guardando medicamento:', { ...newDrug, image: 'base64_omitted' });
+
+      const success = await saveDrug(newDrug);
+      if (success) {
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert('Error', 'No se pudo guardar el medicamento');
+      }
+    } catch (error) {
+      console.error('Error guardando medicamento:', error);
+      Alert.alert('Error', 'Ocurrió un error al guardar el medicamento');
     }
   };
 
   return (
     <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
-        <Stack.Screen
-          options={{
-            title: "Add Medicine",
-            headerBackTitle: "Back",
-          }}
-        />
+        <Stack.Screen options={{ title: "Nuevo Medicamento" }} />
 
-        <View style={styles.card}>
-          <MaterialIcons
-            name="medical-services"
-            size={24}
-            color="#007AFF"
-            style={styles.icon}
-          />
+        <View style={styles.inputGroup}>
+          <ThemedText style={styles.label}>Nombre del medicamento</ThemedText>
           <TextInput
             style={styles.input}
-            placeholder="Medicine Name"
-            value={drugName}
-            onChangeText={setDrugName}
-            placeholderTextColor="#999"
+            value={name}
+            onChangeText={setName}
+            placeholder="Ej: Paracetamol"
           />
         </View>
 
-        <View style={styles.card}>
-          <MaterialIcons
-            name="description"
-            size={24}
-            color="#007AFF"
-            style={styles.icon}
-          />
+        <View style={styles.inputGroup}>
+          <ThemedText style={styles.label}>Descripción</ThemedText>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Description"
             value={description}
             onChangeText={setDescription}
             multiline
-            placeholderTextColor="#999"
+            placeholder="Ej: Para el dolor de cabeza"
           />
         </View>
 
-        <View style={styles.card}>
-          <MaterialIcons
-            name="access-time"
-            size={24}
-            color="#007AFF"
-            style={styles.icon}
-          />
-          <TouchableOpacity
-            onPress={() => setShowTimePicker(true)}
-            style={styles.dateTimeInput}
-          >
-            <ThemedText style={styles.dateTimeText}>
-              {hour.toLocaleTimeString()}
-            </ThemedText>
-          </TouchableOpacity>
+        <View style={styles.inputGroup}>
+          <ThemedText style={styles.label}>Tipo de tratamiento</ThemedText>
+          <View style={styles.typeContainer}>
+            {['once', 'daily', 'interval'].map((t) => (
+              <TouchableOpacity
+                key={t}
+                style={[
+                  styles.typeButton,
+                  type === t && styles.typeButtonActive
+                ]}
+                onPress={() => setType(t as typeof type)}
+              >
+                <ThemedText style={[
+                  styles.typeButtonText,
+                  type === t && styles.typeButtonTextActive
+                ]}>
+                  {t === 'once' ? 'Una vez' : t === 'daily' ? 'Diario' : 'Intervalo'}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        {showTimePicker && Platform.OS === "ios" && (
-          <DateTimePicker
-            value={hour}
-            mode="time"
-            is24Hour={true}
-            display="spinner"
-            onChange={(event, selectedTime) => {
-              setShowTimePicker(false);
-              if (selectedTime) setHour(selectedTime);
-            }}
-          />
-        )}
-
-        <View style={styles.card}>
-          <MaterialIcons
-            name="event"
-            size={24}
-            color="#007AFF"
-            style={styles.icon}
-          />
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.dateTimeInput}
-          >
-            <ThemedText style={styles.dateTimeText}>
-              {date ? date.toLocaleDateString() : "Optional - Today by default"}
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        {showDatePicker && Platform.OS === "ios" && (
-          <DateTimePicker
-            value={date || new Date()}
-            mode="date"
-            display="spinner"
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
-          />
-        )}
-
-        <View style={styles.card}>
-          <MaterialIcons
-            name="repeat"
-            size={24}
-            color="#007AFF"
-            style={styles.icon}
-          />
-          <TouchableOpacity
-            style={styles.pickerButton}
-            onPress={() => setShowPicker(true)}
-          >
-            <ThemedText style={styles.pickerButtonText}>
-              {repetition === "none"
-                ? "No Repetition"
-                : repetition === "daily"
-                ? "Daily"
-                : repetition === "weekly"
-                ? "Weekly"
-                : "Monthly"}
-            </ThemedText>
-            <MaterialIcons name="arrow-drop-down" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-
-        {showPicker && (
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={repetition}
-              style={styles.picker}
-              onValueChange={(itemValue) => {
-                setRepetition(itemValue);
-                setShowPicker(false);
-              }}
-            >
-              <Picker.Item label="No Repetition" value="none" />
-              <Picker.Item label="Daily" value="daily" />
-              <Picker.Item label="Weekly" value="weekly" />
-              <Picker.Item label="Monthly" value="monthly" />
-            </Picker>
+        {type === 'interval' && (
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Intervalo de horas</ThemedText>
+            <View style={styles.typeContainer}>
+              {[8, 12, 24].map((hrs) => (
+                <TouchableOpacity
+                  key={hrs}
+                  style={[
+                    styles.typeButton,
+                    interval === hrs && styles.typeButtonActive
+                  ]}
+                  onPress={() => setInterval(hrs)}
+                >
+                  <ThemedText style={[
+                    styles.typeButtonText,
+                    interval === hrs && styles.typeButtonTextActive
+                  ]}>
+                    {`${hrs} hrs`}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
-        <TouchableOpacity style={styles.imageButton} onPress={handleImagePick}>
-          <MaterialIcons name="add-photo-alternate" size={24} color="#666" />
-          <ThemedText style={styles.imageButtonText}>Add Photo</ThemedText>
+        {type !== 'once' && (
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Duración (días)</ThemedText>
+            <TextInput
+              style={styles.input}
+              value={duration.toString()}
+              onChangeText={(text) => setDuration(parseInt(text) || 1)}
+              keyboardType="number-pad"
+            />
+          </View>
+        )}
+
+        <TouchableOpacity 
+          style={styles.imageButton} 
+          onPress={handleImagePick}
+        >
+          <MaterialIcons name="photo-camera" size={24} color="#666" />
+          <ThemedText style={styles.imageButtonText}>
+            Tomar foto del medicamento
+          </ThemedText>
         </TouchableOpacity>
 
         {image && (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.image} />
+          <View style={styles.imagePreview}>
+            <Image source={{ uri: image }} style={styles.previewImage} />
           </View>
         )}
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <MaterialIcons name="check" size={24} color="#fff" />
-          <ThemedText style={styles.submitButtonText}>Save Medicine</ThemedText>
+        <TouchableOpacity 
+          style={styles.submitButton}
+          onPress={handleSubmit}
+        >
+          <ThemedText style={styles.submitButtonText}>
+            Guardar medicamento
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ScrollView>
@@ -249,109 +230,83 @@ export default function AddMedicine() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF"
   },
   content: {
-    padding: 24,
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
-  icon: {
-    marginRight: 16,
-    opacity: 0.8,
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontWeight: '500',
   },
   input: {
-    flex: 1,
-    fontSize: 17,
-    color: "#2C3E50",
-    fontWeight: "500",
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
   },
   textArea: {
-    height: 120,
-    textAlignVertical: "top",
-    paddingTop: 12,
+    height: 100,
+    textAlignVertical: 'top',
   },
-  dateTimeInput: {
+  typeContainer: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  typeButton: {
     flex: 1,
-  },
-  dateTimeText: {
-    fontSize: 17,
-    color: "#2C3E50",
-    fontWeight: "500",
-  },
-  pickerButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  pickerButtonText: {
-    fontSize: 17,
-    color: "#2C3E50",
-    fontWeight: "500",
-  },
-  pickerContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: "hidden",
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: '#ddd',
+    alignItems: 'center',
   },
-  picker: {
-    height: 200,
+  typeButtonActive: {
+    backgroundColor: '#2196F3',
+    borderColor: '#2196F3',
+  },
+  typeButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  typeButtonTextActive: {
+    color: 'white',
   },
   imageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: '#ddd',
+    marginBottom: 20,
   },
   imageButtonText: {
-    marginLeft: 12,
-    fontSize: 17,
-    color: "#2C3E50",
-    fontWeight: "500",
+    marginLeft: 8,
+    fontSize: 16,
   },
-  imageContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+  imagePreview: {
+    marginBottom: 20,
   },
-  image: {
-    width: "100%",
-    height: 240,
-    borderRadius: 12,
+  previewImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
   },
   submitButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2563EB",
+    backgroundColor: '#2196F3',
     padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   submitButtonText: {
-    marginLeft: 12,
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600",
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
