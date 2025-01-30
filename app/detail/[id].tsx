@@ -95,6 +95,38 @@ export default function DetailMedicine() {
     }
   };
 
+  const renderActionButton = () => {
+    if (drug.type === 'once') {
+      if (!drug.lastTaken) {
+        return (
+          <TouchableOpacity
+            style={[styles.button, styles.takenButton]}
+            onPress={handleMarkAsTaken}
+          >
+            <ThemedText style={styles.buttonText}>
+              Marcar como tomada
+            </ThemedText>
+          </TouchableOpacity>
+        );
+      }
+      return null;
+    }
+
+    if (canTakeNow) {
+      return (
+        <TouchableOpacity
+          style={[styles.button, styles.takenButton]}
+          onPress={handleMarkAsTaken}
+        >
+          <ThemedText style={styles.buttonText}>
+            Registrar dosis
+          </ThemedText>
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
   return (
     <ScrollView style={styles.container}>
       <ThemedView style={styles.content}>
@@ -116,17 +148,8 @@ export default function DetailMedicine() {
           {renderTreatmentInfo()}
 
           <View style={styles.buttonContainer}>
-            {canTakeNow && (
-              <TouchableOpacity
-                style={[styles.button, styles.takenButton]}
-                onPress={handleMarkAsTaken}
-              >
-                <ThemedText style={styles.buttonText}>
-                  Marcar como tomada
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-
+            {renderActionButton()}
+            
             <TouchableOpacity
               style={[styles.button, styles.deleteButton]}
               onPress={handleDelete}

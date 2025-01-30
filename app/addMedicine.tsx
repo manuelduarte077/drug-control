@@ -93,12 +93,10 @@ export default function AddMedicine() {
         interval: type === 'interval' ? interval : undefined,
         duration: type !== 'once' ? duration : 1,
         image: image,
-        takenDates: [format(now, 'yyyy-MM-dd')],
-        lastTaken: format(now, 'yyyy-MM-dd'),
+        takenDates: type !== 'once' ? [format(now, 'yyyy-MM-dd')] : [],
+        lastTaken: type !== 'once' ? format(now, 'yyyy-MM-dd') : undefined,
         nextDose: nextDose || undefined
       };
-
-      console.log('Guardando medicamento:', { ...newDrug, image: 'base64_omitted' });
 
       const success = await saveDrug(newDrug);
       if (success) {
