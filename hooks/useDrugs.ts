@@ -170,6 +170,7 @@ export function useDrugs() {
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
+      refresh();
       return true;
     } catch (error) {
       console.error("Error marking drug as taken:", error);

@@ -21,9 +21,11 @@ export default function HomeScreen() {
   const { drugs, loading } = useDrugs();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredDrugs = drugs.filter((drug) =>
-    drug.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDrugs = drugs
+    .filter(drug => !drug.isCompleted)
+    .filter((drug) =>
+      drug.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <SafeAreaView

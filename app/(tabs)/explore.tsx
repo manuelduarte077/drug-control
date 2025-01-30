@@ -3,37 +3,12 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useDrugs } from "@/hooks/useDrugs";
-import { parseISO } from "date-fns";
 import { ActivityIndicator, StyleSheet } from "react-native";
 
 export default function ExploreScreen() {
   const { drugs, loading } = useDrugs();
 
-  const getTakenDrugs = () => {
-    return drugs.filter((drug) => {
-      if (drug.type === "once") {
-        return drug.lastTaken;
-      }
-
-      if (drug.type === "daily" || drug.type === "interval") {
-        const duration = drug.duration || 1;
-        const firstTakenDate = drug.takenDates?.[0];
-        if (!firstTakenDate) return false;
-
-        const startDate = parseISO(firstTakenDate);
-        const expectedTakes =
-          drug.type === "daily"
-            ? duration
-            : Math.floor((duration * 24) / (drug.interval || 24));
-
-        return drug.takenDates?.length === expectedTakes;
-      }
-
-      return false;
-    });
-  };
-
-  const takenDrugs = getTakenDrugs();
+  const completedDrugs = drugs.filter((drug) => drug.isCompleted);
 
   return (
     <ParallaxScrollView
@@ -53,12 +28,12 @@ export default function ExploreScreen() {
 
       {loading ? (
         <ActivityIndicator size="large" color="#2196F3" />
-      ) : takenDrugs.length === 0 ? (
+      ) : completedDrugs.length === 0 ? (
         <ThemedText style={styles.emptyText}>
           No hay medicamentos completados
         </ThemedText>
       ) : (
-        takenDrugs.map((drug) => (
+        completedDrugs.map((drug) => (
           <DrugItem key={drug.id} drug={drug} showCompleted />
         ))
       )}

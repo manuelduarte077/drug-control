@@ -62,6 +62,7 @@ export default function DetailMedicine() {
   const handleMarkAsTaken = async () => {
     if (await markAsTaken(drug.id)) {
       refresh();
+      router.replace("/(tabs)");
       Alert.alert("¡Éxito!", "Medicamento marcado como tomado");
     } else {
       Alert.alert("Error", "No se pudo marcar el medicamento como tomado");
