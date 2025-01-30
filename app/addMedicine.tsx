@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useDrugs } from "@/hooks/useDrugs";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -26,6 +27,7 @@ export default function AddMedicine() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const { saveDrug } = useDrugs();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -51,19 +53,22 @@ export default function AddMedicine() {
       return;
     }
 
-    // Here you would typically save to a database
     const newDrug = {
       id: Date.now().toString(),
       name: drugName,
       description,
       hour: hour.toLocaleTimeString(),
-      date: (date || new Date()).toISOString().split("T")[0] + "Z",
+      date: (date || new Date()).toISOString().split("T")[0],
       repetition,
       image: image || "https://loremflickr.com/300/300",
     };
 
-    // Navigate back after saving
-    router.canGoBack();
+    const success = await saveDrug(newDrug);
+    if (success) {
+      router.back();
+    } else {
+      alert("Error al guardar el medicamento");
+    }
   };
 
   return (
