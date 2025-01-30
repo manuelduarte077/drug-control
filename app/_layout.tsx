@@ -18,7 +18,12 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    Parkinsans: require("../assets/fonts/Parkinsans-Regular.ttf"),
+    ParkinsansBold: require("../assets/fonts/Parkinsans-Bold.ttf"),
+    ParkinsansLight: require("../assets/fonts/Parkinsans-ExtraBold.ttf"),
+    ParkinsansItalic: require("../assets/fonts/Parkinsans-Light.ttf"),
+    ParkinsansMedium: require("../assets/fonts/Parkinsans-Medium.ttf"),
+    ParkinsansThin: require("../assets/fonts/Parkinsans-SemiBold.ttf"),
   });
 
   useEffect(() => {

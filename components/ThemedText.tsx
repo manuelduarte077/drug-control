@@ -1,6 +1,7 @@
-import { Text, type TextProps, StyleSheet } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useMemo } from 'react';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -16,11 +17,21 @@ export function ThemedText({
   ...rest
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const fontFamily = useMemo(() => {
+    switch (type) {
+      case 'title': return 'ParkinsansBold';
+      case 'subtitle': return 'ParkinsansMedium';
+      case 'defaultSemiBold': return 'ParkinsansSemiBold';
+      case 'link': return 'ParkinsansLight';
+      case 'default': return 'Parkinsans';
+      default: return 'Parkinsans';
+    }
+  }, [type]);
 
   return (
     <Text
       style={[
-        { color },
+        { color, fontFamily },
         type === 'default' ? styles.default : undefined,
         type === 'title' ? styles.title : undefined,
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
