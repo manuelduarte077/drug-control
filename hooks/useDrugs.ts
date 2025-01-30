@@ -1,6 +1,6 @@
 import { Drug } from "@/types/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addHours, format } from "date-fns";
+import { addDays, addHours, format, isAfter, parseISO } from "date-fns";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "@drugs";
@@ -14,7 +14,31 @@ export function useDrugs() {
     try {
       const storedDrugs = await AsyncStorage.getItem(STORAGE_KEY);
       if (storedDrugs) {
-        setDrugs(JSON.parse(storedDrugs));
+        const parsedDrugs = JSON.parse(storedDrugs);
+        const updatedDrugs = parsedDrugs.map((drug: Drug) => {
+          if (drug.isCompleted) return drug;
+
+          const now = new Date();
+          if (drug.type === "daily" && drug.startTime) {
+            const [hours, minutes] = drug.startTime.split(":");
+            const nextDate = new Date(now);
+            nextDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+            if (nextDate < now) {
+              nextDate.setDate(nextDate.getDate() + 1);
+            }
+
+            drug.nextDose = format(nextDate, "yyyy-MM-dd HH:mm:ss");
+          } else if (drug.type === "interval" && drug.lastTaken) {
+            const lastTaken = parseISO(drug.lastTaken);
+            const nextDose = addHours(lastTaken, drug.interval || 24);
+            if (isAfter(nextDose, now)) {
+              drug.nextDose = format(nextDose, "yyyy-MM-dd HH:mm:ss");
+            }
+          }
+          return drug;
+        });
+        setDrugs(updatedDrugs);
       }
     } catch (error) {
       console.error("Error loading drugs:", error);
@@ -29,7 +53,42 @@ export function useDrugs() {
 
   const saveDrug = async (drug: Drug) => {
     try {
-      const updatedDrugs = [...drugs, drug];
+      const now = new Date();
+      let scheduledDates: string[] = [];
+      let nextDose: string | undefined;
+
+      if (drug.type === "daily") {
+        const startTime = drug.startTime.split(":");
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(parseInt(startTime[0]), parseInt(startTime[1]), 0);
+
+        nextDose = format(tomorrow, "yyyy-MM-dd HH:mm:ss");
+        scheduledDates = Array.from({ length: drug.duration || 1 }, (_, i) =>
+          format(addDays(now, i), "yyyy-MM-dd")
+        );
+      } else if (drug.type === "interval") {
+        nextDose = format(
+          addHours(now, drug.interval || 24),
+          "yyyy-MM-dd HH:mm:ss"
+        );
+        const totalDoses = Math.ceil(
+          ((drug.duration || 1) * 24) / (drug.interval || 24)
+        );
+        scheduledDates = Array.from({ length: totalDoses }, (_, i) =>
+          format(addHours(now, i * (drug.interval || 24)), "yyyy-MM-dd")
+        );
+      }
+
+      const newDrug = {
+        ...drug,
+        scheduledDates,
+        remainingDoses: drug.type === "once" ? 1 : scheduledDates.length,
+        totalDoses: drug.type === "once" ? 1 : scheduledDates.length,
+        nextDose,
+      };
+
+      const updatedDrugs = [...drugs, newDrug];
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
       return true;
@@ -59,21 +118,46 @@ export function useDrugs() {
 
       const updatedDrugs = drugs.map((drug) => {
         if (drug.id === id) {
-          const nextDose =
-            drug.type === "interval"
-              ? format(
-                  addHours(now, drug.interval || 24),
-                  "yyyy-MM-dd HH:mm:ss"
-                )
-              : drug.type === "daily"
-              ? format(addHours(now, 24), "yyyy-MM-dd HH:mm:ss")
-              : undefined;
+          const totalTaken = (drug.takenDates?.length || 0) + 1;
+          const expectedTakes =
+            (drug.type === "daily"
+              ? drug.duration
+              : drug.type === "interval"
+              ? Math.ceil(((drug.duration || 1) * 24) / (drug.interval || 24))
+              : 1) || 1;
+
+          const remainingDoses = expectedTakes - totalTaken;
+          let nextDose: string | undefined;
+          let isCompleted = false;
+
+          if (remainingDoses <= 0) {
+            isCompleted = true;
+            nextDose = undefined;
+          } else {
+            if (drug.type === "daily") {
+              const nextDate = addDays(parseISO(today), 1);
+              nextDate.setHours(
+                parseInt(drug.startTime.split(":")[0]),
+                parseInt(drug.startTime.split(":")[1]),
+                0,
+                0
+              );
+              nextDose = format(nextDate, "yyyy-MM-dd HH:mm:ss");
+            } else if (drug.type === "interval") {
+              nextDose = format(
+                addHours(now, drug.interval || 24),
+                "yyyy-MM-dd HH:mm:ss"
+              );
+            }
+          }
 
           return {
             ...drug,
             lastTaken: format(now, "yyyy-MM-dd HH:mm:ss"),
             takenDates: [...(drug.takenDates || []), today],
             nextDose,
+            remainingDoses,
+            isCompleted,
           };
         }
         return drug;
@@ -81,7 +165,6 @@ export function useDrugs() {
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrugs));
       setDrugs(updatedDrugs);
-      await loadDrugs();
       return true;
     } catch (error) {
       console.error("Error marking drug as taken:", error);

@@ -64,10 +64,16 @@ export default function DetailMedicine() {
     }
   };
 
-  const markedDates = drug.takenDates?.reduce((acc, date) => ({
-    ...acc,
-    [date]: { selected: true, marked: true, selectedColor: '#2196F3' }
-  }), {});
+  const markedDates = {
+    ...(drug.scheduledDates?.reduce((acc, date) => ({
+      ...acc,
+      [date]: { marked: true, dotColor: '#FFA000' }
+    }), {})),
+    ...(drug.takenDates?.reduce((acc, date) => ({
+      ...acc,
+      [date]: { selected: true, marked: true, selectedColor: '#2196F3' }
+    }), {}))
+  };
 
   const renderTreatmentInfo = () => {
     switch (drug.type) {
@@ -81,11 +87,15 @@ export default function DetailMedicine() {
           </View>
         );
       case 'daily':
+        const remainingDaily = (drug.duration || 1) - (drug.takenDates?.length || 0);
         return (
           <View style={styles.infoBox}>
             <ThemedText style={styles.infoTitle}>Tratamiento diario</ThemedText>
             <ThemedText style={styles.infoValue}>
-              Duración: {drug.duration || 1} días
+              Dosis restantes: {remainingDaily} de {drug.duration}
+            </ThemedText>
+            <ThemedText style={styles.infoValue}>
+              Próxima dosis: {drug.nextDose ? format(parseISO(drug.nextDose), 'dd/MM/yyyy HH:mm') : 'No programada'}
             </ThemedText>
             <ThemedText style={styles.infoValue}>
               Hora programada: {formatTime(drug.startTime)}
@@ -93,14 +103,16 @@ export default function DetailMedicine() {
           </View>
         );
       case 'interval':
+        const totalDoses = Math.ceil((drug.duration || 1) * 24 / (drug.interval || 24));
+        const remainingInterval = totalDoses - (drug.takenDates?.length || 0);
         return (
           <View style={styles.infoBox}>
             <ThemedText style={styles.infoTitle}>Tratamiento por intervalos</ThemedText>
             <ThemedText style={styles.infoValue}>
-              Cada {drug.interval} horas
+              Dosis restantes: {remainingInterval} de {totalDoses}
             </ThemedText>
             <ThemedText style={styles.infoValue}>
-              Duración: {drug.duration || 1} días
+              Cada {drug.interval} horas
             </ThemedText>
             <ThemedText style={styles.infoValue}>
               Próxima dosis: {drug.nextDose ? format(parseISO(drug.nextDose), 'dd/MM/yyyy HH:mm') : 'No programada'}
@@ -143,15 +155,19 @@ export default function DetailMedicine() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <ThemedView style={styles.content}>
-        <Stack.Screen
-          options={{
-            title: "Detalle del Medicamento",
-            headerBackTitle: "Atrás"
-          }}
-        />
-
+    <ThemedView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: "Detalle del Medicamento",
+          headerBackTitle: "Atrás"
+        }}
+      />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.imageContainer}>
           <Image source={{ uri: drug.image }} style={styles.image} />
         </View>
@@ -192,18 +208,22 @@ export default function DetailMedicine() {
             </View>
           )}
         </View>
-      </ThemedView>
-    </ScrollView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 32,
   },
   imageContainer: {
     alignItems: 'center',
@@ -269,6 +289,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginTop: 10,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

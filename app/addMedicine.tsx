@@ -24,7 +24,7 @@ export default function AddMedicine() {
   const [type, setType] = useState<'once' | 'daily' | 'interval'>('once');
   const [interval, setInterval] = useState<number>(24);
   const [duration, setDuration] = useState<number>(1);
-  const [image, setImage] = useState<string | null>(null);
+  const [image, setImage] = useState<string>("");
   const { saveDrug } = useDrugs();
 
   const handleImagePick = async () => {
@@ -60,6 +60,17 @@ export default function AddMedicine() {
     } catch (error) {
       console.error('Error seleccionando imagen:', error);
       Alert.alert('Error', 'No se pudo seleccionar la imagen');
+    }
+  };
+
+  const handleDurationChange = (text: string) => {
+    if (text === '') {
+      setDuration(0);
+      return;
+    }
+    const num = parseInt(text);
+    if (!isNaN(num) && num >= 0) {
+      setDuration(num);
     }
   };
 
@@ -112,7 +123,8 @@ export default function AddMedicine() {
 
   return (
     <ScrollView style={styles.container} 
-      keyboardShouldPersistTaps="handled"
+      keyboardShouldPersistTaps="handled" 
+      keyboardDismissMode="on-drag"
     >
       <ThemedView style={styles.content}>
         <Stack.Screen options={{ title: "Nuevo Medicamento" , headerBackTitle: "Atrás" }} />
@@ -191,9 +203,10 @@ export default function AddMedicine() {
             <ThemedText style={styles.label}>Duración (días)</ThemedText>
             <TextInput
               style={styles.input}
-              value={duration.toString()}
-              onChangeText={(text) => setDuration(parseInt(text) || 1)}
+              value={duration === 0 ? '' : duration.toString()}
+              onChangeText={handleDurationChange}
               keyboardType="number-pad"
+              maxLength={3}
             />
           </View>
         )}
@@ -230,6 +243,7 @@ export default function AddMedicine() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    
   },
   content: {
     padding: 16,
