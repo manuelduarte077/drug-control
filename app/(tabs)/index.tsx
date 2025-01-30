@@ -1,8 +1,14 @@
-import { Image, StyleSheet } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
+import {
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 
 import DrugItem from "@/components/DrugItem";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { Drug } from "@/types/types";
 import { Link } from "expo-router";
 import React from "react";
@@ -42,44 +48,69 @@ const drug: Drug[] = [
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedText type="title" style={styles.title}>
-        Lista de medicamentos
-      </ThemedText>
+    <SafeAreaView
+      style={{
+        ...styles.container,
+        paddingTop: Platform.OS === "ios" ? 44 : 55,
+      }}>
+      <ThemedView style={styles.appBar}>
+        <ThemedText type="title" style={styles.appBarTitle}>
+          Medicamentos
+        </ThemedText>
+      </ThemedView>
 
-      {drug.map((drug) => (
-        <DrugItem key={drug.id} drug={drug} />
-      ))}
+      <ThemedView style={styles.content}>
+        {drug.map((drug) => (
+          <DrugItem key={drug.id} drug={drug} />
+        ))}
+      </ThemedView>
 
-      <Link href="/addMedicine" style={styles.link}>
-        Agregar Medicamento
+      <Link href="/addMedicine" asChild>
+        <TouchableOpacity style={styles.fab}>
+          <AntDesign name="plus" size={24} color="white" />
+        </TouchableOpacity>
       </Link>
-    </ParallaxScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
+  container: {
+    flex: 1,
+    backgroundColor: "#2196F3",
   },
-
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  appBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "#2196F3",
+  },
+  appBarTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "white",
+  },
+  content: {
+    flex: 1,
+    gap: 16,
+    padding: 16,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  fab: {
     position: "absolute",
-  },
-
-  link: {
-    color: "blue",
+    width: 56,
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    right: 20,
+    bottom: Platform.OS === "ios" ? 90 : 20,
+    backgroundColor: "#2196F3",
+    borderRadius: 28,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 });
