@@ -22,9 +22,9 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredDrugs = drugs
-    .filter(drug => !drug.isCompleted)
+    .filter((drug) => !drug.isCompleted)
     .filter((drug) =>
-      drug.name.toLowerCase().includes(searchQuery.toLowerCase())
+      drug.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
   return (
@@ -32,7 +32,8 @@ export default function HomeScreen() {
       style={{
         ...styles.container,
         paddingTop: Platform.OS === "ios" ? 44 : 55,
-      }}>
+      }}
+    >
       <ThemedView style={styles.appBar}>
         <ThemedText type="title" style={styles.appBarTitle}>
           Medicamentos
@@ -53,7 +54,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </ThemedView>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -62,14 +63,12 @@ export default function HomeScreen() {
           <ActivityIndicator size="large" color="#2196F3" />
         ) : filteredDrugs.length === 0 ? (
           <ThemedText style={styles.emptyText}>
-            {searchQuery 
+            {searchQuery
               ? "No se encontraron medicamentos"
               : "No hay medicamentos agregados"}
           </ThemedText>
         ) : (
-          filteredDrugs.map((drug) => (
-            <DrugItem key={drug.id} drug={drug} />
-          ))
+          filteredDrugs.map((drug) => <DrugItem key={drug.id} drug={drug} />)
         )}
         <View style={{ height: 50 }} />
       </ScrollView>

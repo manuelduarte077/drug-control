@@ -7,7 +7,6 @@ import { ActivityIndicator, StyleSheet } from "react-native";
 
 export default function ExploreScreen() {
   const { drugs, loading } = useDrugs();
-
   const completedDrugs = drugs.filter((drug) => drug.isCompleted);
 
   return (
